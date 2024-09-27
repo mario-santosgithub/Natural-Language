@@ -6,13 +6,33 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import GridSearchCV
 
 
+# -----------------------------------------------------------------------------
+#                                  Config
+# -----------------------------------------------------------------------------
+
+# If the model trains with only the first 50 words of the plot
+weak = True
+
 trainPath = "./train.txt"
 trainDF = pd.read_csv(trainPath, sep='\t', names=['title', 'from', 'genre', 'director', 'plot'])
 
 testPath = "./test_no_labels.txt"
 testDF = pd.read_csv(testPath, sep='\t', header=None, names=['title', 'from', 'director', 'plot'])
 
-X_train = trainDF['plot']
+# -----------------------------------------------------------------------------
+#                                 Main Code
+# -----------------------------------------------------------------------------
+
+X_train = None
+if not weak:
+    X_train = trainDF['plot']
+else:
+    trainDF = trainDF.to_dict()
+    for i in range(len(trainDF['plot'])):
+        trainDF['plot'][i] = trainDF['plot'][i][:50]
+        trainDF = pd.DataFrame.from_dict(trainDF)
+    X_train = trainDF['plot']
+
 y_train = trainDF['genre']
 X_test = testDF['plot']
 
