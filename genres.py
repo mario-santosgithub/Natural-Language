@@ -100,8 +100,14 @@ if not weak:
 else:
     trainDF = trainDF.to_dict()
     for i in range(len(trainDF['plot'])):
-        trainDF['plot'][i] = trainDF['plot'][i][:50]
-        trainDF = pd.DataFrame.from_dict(trainDF)
+        words = trainDF['plot'][i].split(' ')
+        plot = ""
+        for j in range(len(words)):
+            if j == 50:
+                break
+            plot += words[j] + " "
+        trainDF['plot'][i] = plot
+    trainDF = pd.DataFrame.from_dict(trainDF)
     X_train = trainDF['plot']
 
 y_train = trainDF['genre']
@@ -110,6 +116,8 @@ X_test = testDF['plot']
 # Maybe something to process the plot ????
 X_train = X_train.apply(apply_preprocessing)
 X_test = X_test.apply(apply_preprocessing)
+
+print(X_train)
 
 # Naive Bayes pipeline with CountVectorizer and TF-IDF
 nb_pipeline = Pipeline([
