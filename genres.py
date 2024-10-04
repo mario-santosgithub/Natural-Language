@@ -11,11 +11,22 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
-nltk.download('punkt')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
-nltk.download('punkt_tab')
-nltk.download('stopwords')
+# -----------------------------------------------------------------------------
+#                                 Constants
+# -----------------------------------------------------------------------------
+
+OUTPUTFILE = "results.txt"
+
+# -----------------------------------------------------------------------------
+#                              nltk downloads (ask if it is ok to use)
+# -----------------------------------------------------------------------------
+
+# Comment if already installed
+# nltk.download('wordnet')
+# nltk.download('omw-1.4')
+# nltk.download('punkt_tab')
+# nltk.download('stopwords')
+
 # -----------------------------------------------------------------------------
 #                                  Config
 # -----------------------------------------------------------------------------
@@ -70,7 +81,7 @@ def apply_preprocessing(text):
         "who's": "who is",
         "won't": "will not",
         "wouldn't": "would not",
-        "would've" : "would have",
+        "would've": "would have",
         "you'd": "you would",
         "you're": "you are",
     }
@@ -120,18 +131,13 @@ X_test = X_test.apply(apply_preprocessing)
 print(X_train)
 
 # Naive Bayes pipeline with CountVectorizer and TF-IDF
-nb_pipeline = Pipeline([
-    ('count_vectorizer', CountVectorizer()),
-    ('tfidf_transformer', TfidfTransformer()),
-    ('classifier', MultinomialNB()),
-])
+nb_pipeline = Pipeline([('count_vectorizer', CountVectorizer()),
+                        ('tfidf_transformer', TfidfTransformer()),
+                        ('classifier', MultinomialNB()),])
 
-# parameters for grid search
-param_grid = {
-    'count_vectorizer__max_features': [1000, 3000, 5000, 10000, 15000, 20000],
-    'tfidf_transformer__use_idf': [True, False],
-    'classifier__alpha': [0.1, 0.2, 0.5, 1.0],
-}
+param_grid = {'count_vectorizer__max_features': [1000, 3000, 5000, 10000, 15000, 20000],
+              'tfidf_transformer__use_idf': [True, False],
+              'classifier__alpha': [0.1, 0.2, 0.5, 1.0],}
 
 grid_search = GridSearchCV(nb_pipeline, param_grid, cv=5)
 grid_search.fit(X_train, y_train)
@@ -139,11 +145,7 @@ grid_search.fit(X_train, y_train)
 best_classifier = grid_search.best_estimator_
 y_test_pred = best_classifier.predict(X_test)
 
-# print(f"Best parameters: {grid_search.best_params_} \n")
-
-# writing the results to the file
-output_path = 'results.txt'
-with open(output_path, 'w') as output:
+with open(OUTPUTFILE, 'w') as output:
     for label in y_test_pred:
         output.write(label + '\n')
-print(f"Results written to {output_path}")
+print(f"Done! Results of the test file in {OUTPUTFILE} file")
