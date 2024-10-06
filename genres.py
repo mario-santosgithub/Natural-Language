@@ -44,7 +44,7 @@ testDF = pd.read_csv(testPath, sep='\t', header=None, names=['title', 'from', 'd
 #                                 Main Code
 # -----------------------------------------------------------------------------
 
-def apply_preprocessing(text):
+def preprocessing(text):
     contractions = {
         "ain't": "am not",
         "aren't": "are not",
@@ -85,10 +85,14 @@ def apply_preprocessing(text):
         "you'd": "you would",
         "you're": "you are",
     }
-    lowered = text.lower()
-    lowered_re = re.sub(r'[^a-zA-Z\s]', '', lowered)
+    
+    # Lowercase the input
+    lowered_text = text.lower()
+    lowered_re = re.sub(r'[^a-zA-Z\s]', '', lowered_text)
+    # Tokenize the text into words
     words = nltk.word_tokenize(lowered_re)
     
+    # Transform the contractions
     preproc = ' '.join(contractions.get(word, word) for word in words)
     tokens = word_tokenize(preproc, "english")
     
@@ -96,11 +100,12 @@ def apply_preprocessing(text):
         if(all(char in string.punctuation for char in token)):
             tokens.remove(token)
 
+    # Remove Stop Words
     stop_words = set(stopwords.words('english'))
-    filtered_tokens = [word for word in tokens if word not in stop_words]
+    new_tokens = [word for word in tokens if word not in stop_words]
 
     lemmatizer = WordNetLemmatizer()
-    lemmatized_tokens = [lemmatizer.lemmatize(token) for token in filtered_tokens]
+    lemmatized_tokens = [lemmatizer.lemmatize(token) for token in new_tokens]
     
     return ' '.join(lemmatized_tokens)
 
@@ -124,28 +129,22 @@ else:
 y_train = trainDF['genre']
 X_test = testDF['plot']
 
-# Maybe something to process the plot ????
-X_train = X_train.apply(apply_preprocessing)
-X_test = X_test.apply(apply_preprocessing)
+# Apply The pre processing to the input
+X_train = X_train.apply(preprocessing)
+X_test = X_test.apply(preprocessing)
 
-print(X_train)
+# NB + CV + TF-IDF
+pipeline = Pipeline([('count_vectorizer', CountVectorizer()), ('tfidf_transformer', TfidfTransformer()), ('classifier', MultinomialNB()),])
 
-# Naive Bayes pipeline with CountVectorizer and TF-IDF
-nb_pipeline = Pipeline([('count_vectorizer', CountVectorizer()),
-                        ('tfidf_transformer', TfidfTransformer()),
-                        ('classifier', MultinomialNB()),])
+params = {'count_vectorizer__max_features': [1000, 3000, 5000, 10000, 15000, 20000], 'tfidf_transformer__use_idf': [True, False], 'classifier__alpha': [0.1, 0.2, 0.5, 1.0],}
 
-param_grid = {'count_vectorizer__max_features': [1000, 3000, 5000, 10000, 15000, 20000],
-              'tfidf_transformer__use_idf': [True, False],
-              'classifier__alpha': [0.1, 0.2, 0.5, 1.0],}
+search = GridSearchCV(pipeline, params, cv=5)
+search.fit(X_train, y_train)
 
-grid_search = GridSearchCV(nb_pipeline, param_grid, cv=5)
-grid_search.fit(X_train, y_train)
-
-best_classifier = grid_search.best_estimator_
-y_test_pred = best_classifier.predict(X_test)
+best = search.best_estimator_
+predicted = best.predict(X_test)
 
 with open(OUTPUTFILE, 'w') as output:
-    for label in y_test_pred:
+    for label in predicted:
         output.write(label + '\n')
 print(f"Done! Results of the test file in {OUTPUTFILE} file")
