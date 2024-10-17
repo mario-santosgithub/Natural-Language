@@ -1,8 +1,7 @@
 import pandas as pd
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 import string
 import re
@@ -18,13 +17,11 @@ from nltk.stem import WordNetLemmatizer
 OUTPUTFILE = "results.txt"
 
 # -----------------------------------------------------------------------------
-#                              nltk downloads (ask if it is ok to use)
+#                              nltk downloads (comment if already downloaded)
 # -----------------------------------------------------------------------------
-
-# Comment if already installed
 # nltk.download('wordnet')
 # nltk.download('omw-1.4')
-# nltk.download('punkt_tab')
+# nltk.download('punkt')
 # nltk.download('stopwords')
 
 # -----------------------------------------------------------------------------
@@ -97,7 +94,7 @@ def preprocessing(text):
     tokens = word_tokenize(preproc, "english")
     
     for token in tokens:
-        if(all(char in string.punctuation for char in token)):
+        if all(char in string.punctuation for char in token):
             tokens.remove(token)
 
     # Remove Stop Words
@@ -112,7 +109,7 @@ def preprocessing(text):
 
 X_train = None
 if not weak:
-    X_train = trainDF['plot']
+    X_train = trainDF['director'] + ' ' + trainDF['plot'] 
 else:
     trainDF = trainDF.to_dict()
     for i in range(len(trainDF['plot'])):
@@ -124,27 +121,54 @@ else:
             plot += words[j] + " "
         trainDF['plot'][i] = plot
     trainDF = pd.DataFrame.from_dict(trainDF)
-    X_train = trainDF['plot']
+    X_train = trainDF['director'] + ' ' + trainDF['plot']
 
 y_train = trainDF['genre']
-X_test = testDF['plot']
+X_test = testDF['director'] + ' ' + testDF['plot']
 
 # Apply The pre processing to the input
 X_train = X_train.apply(preprocessing)
 X_test = X_test.apply(preprocessing)
 
+# -----------------------------------------------------------------------------
+#                          Model Pipeline and GridSearch
+# -----------------------------------------------------------------------------
+
 # NB + CV + TF-IDF
-pipeline = Pipeline([('count_vectorizer', CountVectorizer()), ('tfidf_transformer', TfidfTransformer()), ('classifier', MultinomialNB()),])
+pipeline = Pipeline([
+    ('count_vectorizer', CountVectorizer()),
+    ('tfidf_transformer', TfidfTransformer()),
+    ('classifier', MultinomialNB()),
+])
 
-params = {'count_vectorizer__max_features': [1000, 3000, 5000, 10000, 15000, 20000], 'tfidf_transformer__use_idf': [True, False], 'classifier__alpha': [0.1, 0.2, 0.5, 1.0],}
+# Define parameter grid for GridSearch
+params = {'count_vectorizer__max_features': [100000],
+          'count_vectorizer__ngram_range': [(1, 2)],
+          'count_vectorizer__min_df': [3],
+          'count_vectorizer__max_df': [0.5], 
+          'count_vectorizer__analyzer': ['word'],
+          'tfidf_transformer__use_idf': [False],
+          'classifier__alpha': [0.0075]}
 
+
+# Initialize GridSearchCV
 search = GridSearchCV(pipeline, params, cv=5)
 search.fit(X_train, y_train)
 
+# Get the best estimator and best params
 best = search.best_estimator_
+best_params = search.best_params_
+
+# Predict the test set
 predicted = best.predict(X_test)
 
+# Save predictions to the output file
 with open(OUTPUTFILE, 'w') as output:
-    for label in predicted:
-        output.write(label + '\n')
+    for i, label in enumerate(predicted):
+        if i < len(predicted) - 1:
+            output.write(label + '\n')
+        else:
+            output.write(label)
+# Print the best parameters found
 print(f"Done! Results of the test file in {OUTPUTFILE} file")
+print("Best parameters found: ", best_params)
