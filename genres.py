@@ -171,4 +171,3 @@ with open(OUTPUTFILE, 'w') as output:
             output.write(label)
 # Print the best parameters found
 print(f"Done! Results of the test file in {OUTPUTFILE} file")
-print("Best parameters found: ", best_params)
