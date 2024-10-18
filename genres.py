@@ -17,7 +17,7 @@ from nltk.stem import WordNetLemmatizer
 OUTPUTFILE = "results.txt"
 
 # -----------------------------------------------------------------------------
-#                              nltk downloads (comment if already downloaded)
+#                 nltk downloads (comment if already downloaded)
 # -----------------------------------------------------------------------------
 # nltk.download('wordnet')
 # nltk.download('omw-1.4')
@@ -84,27 +84,26 @@ def preprocessing(text):
     }
     
     # Lowercase the input
-    lowered_text = text.lower()
-    lowered_re = re.sub(r'[^a-zA-Z\s]', '', lowered_text)
+    ltext = text.lower()
     # Tokenize the text into words
-    words = nltk.word_tokenize(lowered_re)
+    words = nltk.word_tokenize(re.sub(r'[^a-zA-Z\s]', '', ltext))
     
     # Transform the contractions
-    preproc = ' '.join(contractions.get(word, word) for word in words)
+    preproc = ' '.join(contractions.get(i, i) for i in words)
     tokens = word_tokenize(preproc, "english")
     
     for token in tokens:
         if all(char in string.punctuation for char in token):
             tokens.remove(token)
 
-    # Remove Stop Words
-    stop_words = set(stopwords.words('english'))
-    new_tokens = [word for word in tokens if word not in stop_words]
+    # Remove Stop Words and Get New Tokens
+    sw = set(stopwords.words('english'))
+    nt = [i for i in tokens if i not in sw]
 
     lemmatizer = WordNetLemmatizer()
-    lemmatized_tokens = [lemmatizer.lemmatize(token) for token in new_tokens]
+    lt = [lemmatizer.lemmatize(token) for token in nt]
     
-    return ' '.join(lemmatized_tokens)
+    return ' '.join(lt)
 
 
 X_train = None
